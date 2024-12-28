@@ -307,10 +307,11 @@ public class PascalFileEntry implements FileEntry {
 	}
 
 	/**
-	 * Filter text: change CR/LF to CR; compress leading SP.
+	 * Filter text: change CR/LF to CR; compress leading SP; pad to 1KB page boundary
 	 * author John B. Matthews
 	 */
 	private byte[] filterText(byte[] data)  {
+		final byte NUL = 0x00;
 		final byte LF  = 0x0a; final byte CR = 0x0d;
 		final byte DLE = 0x10; final byte SP = 0x20;
 		ByteArrayOutputStream buf = new ByteArrayOutputStream(data.length);
@@ -334,6 +335,19 @@ public class PascalFileEntry implements FileEntry {
 				index++;
 			}
 		}
+
+        // Pad file data with nulls to a 1024-byte page boundary. Just note that we need
+        // at least one null to end the file (we think). This means that data terminating
+        // exactly on a page boundary will cause the file to end with a full empty page.
+        int textSize = buf.size();
+        int padCount = 1024 - (textSize % 1024);
+
+        System.out.printf("Pascal TEXT padding: %d bytes\n", padCount);
+        while (padCount-- > 0) {
+            buf.write(NUL);
+        }
+        System.out.printf("Pascal TEXT file size: %d => %d\n", textSize, buf.size());
+
 		return buf.toByteArray();
 	}
 
